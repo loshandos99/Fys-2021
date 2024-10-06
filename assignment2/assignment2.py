@@ -13,7 +13,8 @@ plt.stairs(counts, bins, label="Class 0")
 counts, bins = np.histogram(features[np.where(classification>0)])
 plt.stairs(counts, bins, label="Class 1")
 plt.legend()
-plt.show()
+plt.title("Histogram of classes")
+plt.savefig("assignment2/Histogram of classes")
 
 # print(len(features))
 
