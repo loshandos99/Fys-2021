@@ -8,13 +8,13 @@ features = df.loc[0].to_numpy()
 classification = df.loc[1].to_numpy()
 
 #Plotting the data as histograms to show the features for each class
-# counts, bins = np.histogram(features[np.where(classification<1)])
-# plt.stairs(counts, bins, label="Class 0")
-# counts, bins = np.histogram(features[np.where(classification>0)])
-# plt.stairs(counts, bins, label="Class 1")
-# plt.legend()
-# plt.title("Histogram of classes")
-# plt.savefig("assignment2/Histogram of classes")
+
+bins = np.linspace(0, 25, 50)
+plt.hist(features[np.where(classification<1)], bins, label="Class 0", alpha=0.7)
+plt.hist(features[np.where(classification>0)], bins, label="Class 1", alpha=0.7)
+plt.legend()
+plt.title("Histogram of classes")
+plt.savefig("assignment2/Histogram of classes")
 
 # print(len(features))
 
