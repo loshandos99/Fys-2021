@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 import sklearn.metrics as metrics
 import random as rnd
 
@@ -46,7 +47,7 @@ for i in range(5):
             train_set_forward = pd.concat([train_set.iloc[:randy], train_set.iloc[randy+split:]])
             
         for key in test_set.keys(): #using test set keys to not include lipophilicity
-            rfc = RandomForestClassifier()
+            dtc = DecisionTreeClassifier()
                 
             X_train = train_set_forward.loc[:,features + [f"{key}"]]
             Y_train = train_set_forward[f"{last_value}"]
@@ -54,8 +55,8 @@ for i in range(5):
             y_vali = validation_set[f"{last_value}"]
 
 
-            rfc.fit(X_train, Y_train)
-            y_pred = rfc.predict(x_vali)
+            dtc.fit(X_train, Y_train)
+            y_pred = dtc.predict(x_vali)
             acc = np.append(acc, metrics.f1_score(y_vali, y_pred))
         
         if acc.max() > accuracy:
@@ -67,6 +68,7 @@ for i in range(5):
     all_features += features
     t += 1
    
+
 all_features = np.array(all_features)
 print(len(all_features))
 features = np.unique(all_features.flatten())
@@ -77,49 +79,60 @@ features = np.unique(all_features.flatten())
 # features4 = ['SMR_VSA10', 'NumAromaticCarbocycles', 'PEOE_VSA14'] 0.572
 # features5 = ['MaxPartialCharge', 'MolLogP', 'MaxAbsPartialCharge', 'MinEStateIndex'] 0.630
 
-# Implementing a random forest classifier
-rfc = RandomForestClassifier()
+# features = ['MolLogP', 'TPSA', 'MinEStateIndex', 'VSA_EState5']
+
+# Implementing a Decision tree classifier
+dtc = DecisionTreeClassifier()
 X_train = train_set.loc[:, features]
 Y_train = train_set[f"{last_value}"]
 X_test = test_set.loc[:, features]
 
 
-rfc.fit(X_train, Y_train)
-y_pred = rfc.predict(X_test)
+dtc.fit(X_train, Y_train)
+y_pred = dtc.predict(X_test)
 
-# #writing a csv file to out in the competition
-out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
-out_file.to_csv("home_exam/randomForestTree/submission.csv", index=False)
+# # #writing a csv file to out in the competition
+# out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
+# out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
    
 
-# Implementing a random forest classifier
-# rfc = RandomForestClassifier()
+# Implementing a Decision tree classifier
+# dtc = DecisionTreeClassifier()
 # X_train = train_set.drop(columns=last_value)
 # Y_train = train_set[f"{last_value}"]
 # X_test = test_set
 
+# dtc.fit(X_train, Y_train)
+# y_pred = dtc.predict(X_test)
 
-# rfc.fit(X_train, Y_train)
-# y_pred = rfc.predict(X_test)
-
-# #writing a csv file to out in the competition
+# # #writing a csv file to out in the competition
 # out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
-# out_file.to_csv("home_exam/randomForestTree/submission.csv", index=False)
+# out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
+   
 
 
-# #getting the most important features
-# feature_importance = pd.Series(rfc.feature_importances_, index=X_train.columns).sort_values(ascending=False)
-# feature_importance = feature_importance.iloc[0:1]
 
-# a = feature_importance.index
+#getting the most important features
+feature_importance = pd.Series(dtc.feature_importances_, index=X_train.columns).sort_values(ascending=False)
+print(features)
+print(feature_importance)
+feature_importance = feature_importance.iloc[0:4]
 
-# rfc = RandomForestClassifier()
-# X_train = train_set.loc[:, a]
-# Y_train = train_set[f"{last_value}"]
-# X_test = test_set.loc[:, a]
+a = feature_importance.index
 
-# rfc.fit(X_train, Y_train)
-# y_pred = rfc.predict(X_test)
+dtc = DecisionTreeClassifier()
+X_train = train_set.loc[:, a]
+Y_train = train_set[f"{last_value}"]
+X_test = test_set.loc[:, a]
+
+dtc.fit(X_train, Y_train)
+y_pred = dtc.predict(X_test)
+
+feature_importance = pd.Series(dtc.feature_importances_, index=X_train.columns).sort_values(ascending=False)
+print(feature_importance.index)
+
+out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
+out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
 
 # # #writing a csv file to out in the competition
 # out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
