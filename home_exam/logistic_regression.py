@@ -22,24 +22,29 @@ for i in train_set.keys():
     last_value = i #to remember the last value, the one we want to classify
 print(train_set.shape) #220 keys, down 10 features
 
+#creating the split
 split = int(len(train_set)*0.8)
 
 train_set_forward = train_set.iloc[:split]
 validation_set = train_set.iloc[split:]
 
+#making the forward selection method
 all_features = []
-t = 0
 for i in range(5):   
     accuracy = 0
     features = []
+    #looping through all the features in case all is needed
     for i in range(220):
         print(features)
-        print(f"accuracy is {accuracy}")
+        print(f"accuracy is {accuracy}") #keeping tabs
         acc = np.array([])
+        
+        #making the split before we test the features
         split = int(len(train_set)*0.2)
 
-        randy = rnd.randint(0, len(train_set))
+        randy = rnd.randint(0, len(train_set)) #random int
 
+        #rulse to get 80/20 split completely random
         if randy + split > len(train_set):
             validation_set = pd.concat([train_set.iloc[randy : ], train_set.iloc[ : randy + split - len(train_set)]])
             train_set_forward = train_set.iloc[ - len(train_set) + randy + split : randy]
@@ -47,53 +52,72 @@ for i in range(5):
             validation_set = train_set.iloc[randy:randy+split]
             train_set_forward = pd.concat([train_set.iloc[:randy], train_set.iloc[randy+split:]])
             
+        #looping through is feature
         for key in test_set.keys(): #using test set keys to not include lipophilicity
-            lr = LogisticRegression(max_iter=1000000)
+            lr = LogisticRegression(max_iter=1000000) #setting up the logistic regression
+            
+            #creating training and validation sets
             X_train = train_set_forward.loc[:,features + [f"{key}"]]
             Y_train = train_set_forward[f"{last_value}"]
             x_vali = validation_set.loc[:,features + [f"{key}"]]
             y_vali = validation_set[f"{last_value}"]
 
-
+            #training and predicting
             lr.fit(X_train, Y_train)
             y_pred = lr.predict(x_vali)
             acc = np.append(acc, metrics.f1_score(y_vali, y_pred))
 
+        #finding accuracy
         if acc.max() > accuracy:
             accuracy = acc.max()
             indx = np.where(acc == acc.max())[0][0]
             features.append(validation_set.columns[indx])
         else:
-            break
+            break #break if we have worse accuracy
         
-    all_features += features
-    t += 1
+    all_features += features #updating features
+    
 
 
 all_features = np.array(all_features)
 print(len(all_features))
-features = np.unique(all_features.flatten())
+features = np.unique(all_features.flatten()) #only want unique features
 
-# print(len(features))
-# features = ['MolLogP', 'fr_COO', 'SlogP_VSA5', 'fr_piperdine', 'VSA_EState5', 'NumHDonors', 'NumSaturatedRings', 'fr_HOCCN', 'fr_halogen', 'fr_sulfide', 'Chi2v', 'fr_Ar_NH', 'fr_aniline', 'PEOE_VSA7', 'PEOE_VSA4', 'Number_of_Rotatable_Bonds', 'fr_unbrch_alkane', 'fr_ketone', 'fr_hdrzine']
+
+#creating a select traing sets function to randomly choose 90 prosent of the training data to train on, and 10 prosent to validate
+def select_training_sets(k, dataframe):
+    frames = []
+    for _ in range(10):
+        frames.append(dataframe.iloc[int(k*len(dataframe)/10) : int((k+1)*len(dataframe)/10), :])
     
-# features = ['MolLogP', 'TPSA', 'MinEStateIndex', 'VSA_EState5']
+    t = frames.pop(k)
+    frames = pd.concat(frames)
+    
+    return frames, t
+        
+
+#cross validation
 y_pred_all = []
 for k in range(10):
     lr = LogisticRegression(max_iter=1000000)
-    X_train = train_set.iloc[int(k*len(train_set)/10) : int((k+1)*len(train_set)/10), :]
-    Y_train = train_set.iloc[int(k*len(train_set)/10) : int((k+1)*len(train_set)/10), :]
-    X_train = X_train.loc[:, features]
-    Y_train = Y_train[f"{last_value}"]
+    frames, t = select_training_sets(k, train_set)
+    
+    #making the training and testing functiom
+    X_train = frames.loc[:, features]
+    Y_train = frames[f"{last_value}"]
+    Y_act = t[f"{last_value}"]
+    X_test_acc = t.loc[:, features]
     X_test = test_set.loc[:, features]
     
     lr.fit(X_train, Y_train)
+    y_pred1 = lr.predict(X_test_acc) #keeping tabs on the accuracy
+    print(metrics.f1_score(Y_act, y_pred1))
     y_pred_all.append(lr.predict(X_test))
 
 y_pred_all = np.array(y_pred_all)
 
 y_pred = np.mean(y_pred_all, axis=0)
-y_pred = np.where(y_pred >= 0.5, 1, 0)
+y_pred = np.where(y_pred >= 0.5, 1, 0) #finding the real predicted values
 
 
 # Implementing a logistic regression classifier
@@ -110,11 +134,6 @@ y_pred = np.where(y_pred >= 0.5, 1, 0)
 out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
 out_file.to_csv("home_exam/logistic_regression/submission.csv", index=False)
 
-# print(accuracy)
-print(features)
-# print(t)
 
 
-# features = ['MolLogP', 'fr_COO', 'SlogP_VSA5', 'fr_piperdine', 'VSA_EState5', 'NumHDonors', 'NumSaturatedRings', 'fr_HOCCN', 'fr_halogen', 'fr_sulfide', 'Chi2v', 'fr_Ar_NH', 'fr_aniline', 'PEOE_VSA7', 'PEOE_VSA4', 'Number_of_Rotatable_Bonds', 'fr_unbrch_alkane', 'fr_ketone', 'fr_hdrzine']
 
-# print(len(features))

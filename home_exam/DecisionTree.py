@@ -73,13 +73,41 @@ all_features = np.array(all_features)
 print(len(all_features))
 features = np.unique(all_features.flatten())
 
-# features1 = ['TPSA', 'HallKierAlpha', 'NHOHCount', 'LabuteASA', 'VSA_EState2', 'VSA_EState3', 'MinPartialCharge'] 0.654
-# features2 = ['MaxPartialCharge', 'MolLogP', 'SMR_VSA3', 'MinAbsPartialCharge', 'NumHDonors'] 0.667
-# features3 = ['MaxAbsPartialCharge', 'SlogP_VSA1', 'MolLogP', 'fr_C_O'] 0.642
-# features4 = ['SMR_VSA10', 'NumAromaticCarbocycles', 'PEOE_VSA14'] 0.572
-# features5 = ['MaxPartialCharge', 'MolLogP', 'MaxAbsPartialCharge', 'MinEStateIndex'] 0.630
 
-# features = ['MolLogP', 'TPSA', 'MinEStateIndex', 'VSA_EState5']
+def select_training_sets(k, dataframe):
+    frames = []
+    for _ in range(10):
+        frames.append(dataframe.iloc[int(k*len(dataframe)/10) : int((k+1)*len(dataframe)/10), :])
+    
+    t = frames.pop(k)
+    frames = pd.concat(frames)
+    
+    return frames, t
+        
+
+y_pred_all = []
+for k in range(10):
+    dtc = DecisionTreeClassifier()
+    
+    frames, t = select_training_sets(k, train_set)
+    
+    X_train = frames.loc[:, features]
+    Y_train = frames[f"{last_value}"]
+    Y_act = t[f"{last_value}"]
+    X_test_acc = t.loc[:, features]
+    X_test = test_set.loc[:, features]
+    
+    dtc.fit(X_train, Y_train)
+    y_pred1 = dtc.predict(X_test_acc)
+    print(metrics.f1_score(Y_act, y_pred1))
+    y_pred_all.append(dtc.predict(X_test))
+
+y_pred_all = np.array(y_pred_all)
+
+y_pred = np.mean(y_pred_all, axis=0)
+y_pred = np.where(y_pred >= 0.5, 1, 0)
+
+
 
 # Implementing a Decision tree classifier
 dtc = DecisionTreeClassifier()
@@ -91,26 +119,12 @@ X_test = test_set.loc[:, features]
 dtc.fit(X_train, Y_train)
 y_pred = dtc.predict(X_test)
 
-# # #writing a csv file to out in the competition
-# out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
-# out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
+# #writing a csv file to out in the competition
+out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
+out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
    
 
-# Implementing a Decision tree classifier
-# dtc = DecisionTreeClassifier()
-# X_train = train_set.drop(columns=last_value)
-# Y_train = train_set[f"{last_value}"]
-# X_test = test_set
-
-# dtc.fit(X_train, Y_train)
-# y_pred = dtc.predict(X_test)
-
-# # #writing a csv file to out in the competition
-# out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
-# out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
    
-
-
 
 #getting the most important features
 feature_importance = pd.Series(dtc.feature_importances_, index=X_train.columns).sort_values(ascending=False)
@@ -134,8 +148,8 @@ print(feature_importance.index)
 out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
 out_file.to_csv("home_exam/DecisionTree/submission.csv", index=False)
 
-# # #writing a csv file to out in the competition
-# out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
-# out_file.to_csv("home_exam/randomForestTree/submission.csv", index=False)
-# feature_importance.plot.bar()
-# plt.show()
+# #writing a csv file to out in the competition
+out_file = pd.DataFrame({"Id": test_set["Id"], f"{last_value}": y_pred})
+out_file.to_csv("home_exam/randomForestTree/submission.csv", index=False)
+feature_importance.plot.bar()
+plt.show()
